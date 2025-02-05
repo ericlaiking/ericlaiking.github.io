@@ -1,12 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
-<title>Eric</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eric</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        header {
+            background: #333;
+            color: white;
+            padding: 20px;
+        }
+        section {
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .profile-pic {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 20px;
+        }
+        footer {
+            background: #333;
+            color: white;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-
-<h1>Hi there, This is Eric.</h1>
-<p>Hello World</p>
-
+    <header>
+        <h1>Hi there, This is Eric.</h1>
+    </header>
+    <section>
+        <div class="container">
+            <img src="profile.jpg" alt="我的大頭貼" class="profile-pic">
+            <h2>About me</h2>
+            <p>Engineer of Nissan Taiwan</p>
+            <p>Specialized in vehicle system integration and development, proficient in CAN Bus and Ethernet analysis capabilities, including multimedia system development, vehicle cybersecurity, OTA, EEA, and related technologies.</p>
+            <p>#System Integration #Automotive Engineering</p>
+        </div>
+    </section>
+    <footer>
+        &copy; 2025 Powered by ChatGPT and Me😁
+    </footer>
 </body>
 </html>
