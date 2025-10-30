@@ -2,15 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>音頻產生器（含掃頻功能）</title>
-  <style>
+    <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
       line-height: 1.6;
-      max-width: 600px; /* 讓手機版面更易讀 */
-      margin: 0 auto;
     }
     label {
       display: block;
@@ -18,18 +15,14 @@
     }
     button {
       margin-top: 15px;
-      padding: 12px 22px; /* 加大按鈕，方便手機點擊 */
+      padding: 10px 20px;
       font-size: 16px;
-    }
-    input, select {
-      font-size: 16px; /* 避免在 iOS 上點擊時自動縮放 */
-      padding: 5px;
     }
     input:disabled {
       background-color: #eee;
     }
   </style>
-</head>
+  </head>
 <body>
   <h2>音頻產生器（掃頻、持續播放、自訂波型）</h2>
 
@@ -58,19 +51,9 @@
   <button onclick="stopOscillator()">停止</button>
 
     <script>
-    let audioCtx;
+    let audioCtx; // 預設為 undefined
     let oscillator;
-    let gainNode;
-
-    // --- 修改 1: 在頁面載入時就建立 AudioContext 和 GainNode ---
-    // 這樣它們就可以在第一次使用者互動時被 "喚醒"
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      gainNode = audioCtx.createGain();
-      gainNode.connect(audioCtx.destination);
-    } catch (e) {
-      alert('Web Audio API is not supported in this browser');
-    }
+    let gainNode; // 預設為 undefined
 
     function toggleDuration() {
       const sustain = document.getElementById('sustain').checked;
@@ -86,71 +69,8 @@
     }
 
     function startOscillator() {
-      // --- 修改 2: 檢查並喚醒 AudioContext (行動裝置的關鍵) ---
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-
-      // 先停止目前可能在播放的聲音
-      // 注意：我們不再呼叫完整的 stopOscillator()，因為我們不想斷開 GainNode
-      if (oscillator) {
+      // 關鍵：在第一次點擊時才建立 AudioContext (延遲建立)
+      if (!audioCtx) {
         try {
-          oscillator.stop();
-        } catch (e) {}
-        oscillator.disconnect();
-      }
-
-      const volume = parseFloat(document.getElementById('volume').value);
-      const waveform = document.getElementById('waveform').value;
-      const sustain = document.getElementById('sustain').checked;
-      const duration = sustain ? null : parseFloat(document.getElementById('duration').value);
-      const sweep = document.getElementById('sweep').checked;
-
-      // --- 修改 3: 不再建立 Ctx 和 GainNode，只建立 Oscillator ---
-      oscillator = audioCtx.createOscillator();
-      oscillator.type = waveform;
-
-      // 設定音量 (GainNode 始終存在)
-      gainNode.gain.cancelScheduledValues(audioCtx.currentTime); // 清除之前的音量設定
-      gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
-
-      oscillator.connect(gainNode);
-      // gainNode 已在全域連接到 destination
-
-      if (sweep) {
-        const startFreq = parseFloat(document.getElementById('startFreq').value);
-        const endFreq = parseFloat(document.getElementById('endFreq').value);
-        oscillator.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
-        if (!sustain && duration) {
-          oscillator.frequency.linearRampToValueAtTime(endFreq, audioCtx.currentTime + duration);
-        } else {
-          // 持續播放時，掃頻時間預設為 2 秒 (原 5 秒可能太長)
-          const sweepDuration = 2; 
-          oscillator.frequency.linearRampToValueAtTime(endFreq, audioCtx.currentTime + sweepDuration);
-        }
-      } else {
-        const freq = parseFloat(document.getElementById('freq').value);
-        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      }
-
-      oscillator.start();
-
-      if (!sustain && duration) {
-        oscillator.stop(audioCtx.currentTime + duration);
-      }
-    }
-
-    function stopOscillator() {
-      // --- 修改 4: 只停止和斷開振盪器 ---
-      if (oscillator) {
-        try {
-          oscillator.stop();
-        } catch (e) {}
-        oscillator.disconnect();
-        oscillator = null;
-      }
-      // 不再操作 gainNode 和 audioCtx
-    }
-  </script>
-  </body>
-</html>
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          gainNode = audioCtx.createGain();
