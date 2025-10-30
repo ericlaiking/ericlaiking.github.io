@@ -1,147 +1,137 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>音頻產生器（含掃頻功能）</title>
-    <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      line-height: 1.6;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-    }
-    button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
-    input:disabled {
-      background-color: #eee;
-    }
-  </style>
-  </head>
+  <meta charset="UTF-8">
+  <title>音頻產生器（含掃頻功能）</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    input:disabled {
+      background-color: #eee;
+    }
+  </style>
+</head>
 <body>
-  <h2>音頻產生器（掃頻、持續播放、自訂波型）</h2>
+  <h2>音頻產生器（掃頻、持續播放、自訂波型）</h2>
 
-  <label><input type="checkbox" id="sweep" onchange="toggleSweep()"> 啟用掃頻</label>
-  <div id="sweep-controls" style="display:none;">
-    <label>起始頻率 (Hz): <input type="number" id="startFreq" value="200"></label>
-    <label>結束頻率 (Hz): <input type="number" id="endFreq" value="2000"></label>
-  </div>
+  <label><input type="checkbox" id="sweep" onchange="toggleSweep()"> 啟用掃頻</label>
+  <div id="sweep-controls" style="display:none;">
+    <label>起始頻率 (Hz): <input type="number" id="startFreq" value="200"></label>
+    <label>結束頻率 (Hz): <input type="number" id="endFreq" value="2000"></label>
+  </div>
 
-  <label id="freqLabel">頻率 (Hz): <input type="number" id="freq" value="1000"></label>
-  <label>持續時間 (秒): <input type="number" id="duration" value="2" step="0.1"></label>
-  <label>音量 (0 ~ 1): <input type="number" id="volume" value="1" step="0.01" min="0" max="1"></label>
+  <label id="freqLabel">頻率 (Hz): <input type="number" id="freq" value="1000"></label>
+  <label>持續時間 (秒): <input type="number" id="duration" value="2" step="0.1"></label>
+  <label>音量 (0 ~ 1): <input type="number" id="volume" value="1" step="0.01" min="0" max="1"></label>
 
-  <label>波型:
-    <select id="waveform">
-      <option value="sine">正弦波 (sine)</option>
-      <option value="square">方波 (square)</option>
-      <option value="triangle">三角波 (triangle)</option>
-      <option value="sawtooth">鋸齒波 (sawtooth)</option>
-    </select>
-  </label>
+  <label>波型:
+    <select id="waveform">
+      <option value="sine">正弦波 (sine)</option>
+      <option value="square">方波 (square)</option>
+      <option value="triangle">三角波 (triangle)</option>
+      <option value="sawtooth">鋸齒波 (sawtooth)</option>
+    </select>
+  </label>
 
-  <label><input type="checkbox" id="sustain" onchange="toggleDuration()"> 持續播放</label>
+  <label><input type="checkbox" id="sustain" onchange="toggleDuration()"> 持續播放</label>
 
-  <button onclick="startOscillator()">播放</button>
-  <button onclick="stopOscillator()">停止</button>
+  <button id="playBtn">播放</button>
+  <button id="stopBtn">停止</button>
 
-    <script>
-    let audioCtx; // 預設為 undefined
-    let oscillator;
-    let gainNode; // 預設為 undefined
+  <script>
+    let audioCtx = null;
+    let oscillator = null;
+    let gainNode = null;
 
-    function toggleDuration() {
-      const sustain = document.getElementById('sustain').checked;
-      const durationInput = document.getElementById('duration');
-      durationInput.disabled = sustain;
-    }
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        return audioCtx.resume();
+      }
+      return Promise.resolve();
+    }
 
-    function toggleSweep() {
-      const sweepEnabled = document.getElementById('sweep').checked;
-      document.getElementById('sweep-controls').style.display = sweepEnabled ? 'block' : 'none';
-      document.getElementById('freq').disabled = sweepEnabled;
-      document.getElementById('freqLabel').style.color = sweepEnabled ? '#aaa' : '';
-    }
+    function toggleDuration() {
+      const sustain = document.getElementById('sustain').checked;
+      const durationInput = document.getElementById('duration');
+      durationInput.disabled = sustain;
+    }
 
-    function startOscillator() {
-      // 關鍵：在第一次點擊時才建立 AudioContext (延遲建立)
-      if (!audioCtx) {
-        try {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          gainNode = audioCtx.createGain();
-          gainNode.connect(audioCtx.destination);
-        } catch (e) {
-          alert('Web Audio API is not supported in this browser');
-          return;
-        }
-      }
+    function toggleSweep() {
+      const sweepEnabled = document.getElementById('sweep').checked;
+      document.getElementById('sweep-controls').style.display = sweepEnabled ? 'block' : 'none';
+      document.getElementById('freq').disabled = sweepEnabled;
+      document.getElementById('freqLabel').style.color = sweepEnabled ? '#aaa' : '';
+    }
 
-      // 檢查並喚醒 (以防萬一)
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+    async function startOscillator() {
+      await ensureAudioContext(); // ✅ iOS 必須 resume context
 
-      // 停止目前可能在播放的聲音
-      if (oscillator) {
-        try {
-          oscillator.stop();
-        } catch (e) {}
-        oscillator.disconnect();
-      }
+      const volume = parseFloat(document.getElementById('volume').value);
+      const waveform = document.getElementById('waveform').value;
+      const sustain = document.getElementById('sustain').checked;
+      const duration = sustain ? null : parseFloat(document.getElementById('duration').value);
+      const sweep = document.getElementById('sweep').checked;
 
-      const volume = parseFloat(document.getElementById('volume').value);
-      const waveform = document.getElementById('waveform').value;
-      const sustain = document.getElementById('sustain').checked;
-      const duration = sustain ? null : parseFloat(document.getElementById('duration').value);
-      const sweep = document.getElementById('sweep').checked;
+      stopOscillator();
 
-      oscillator = audioCtx.createOscillator();
-      oscillator.type = waveform;
+      oscillator = audioCtx.createOscillator();
+      gainNode = audioCtx.createGain();
 
-      // 設定音量
-      gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+      oscillator.type = waveform;
+      gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
 
-      oscillator.connect(gainNode);
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
 
-      // 頻率設定
-      if (sweep) {
-        const startFreq = parseFloat(document.getElementById('startFreq').value);
-        const endFreq = parseFloat(document.getElementById('endFreq').value);
-        oscillator.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
-        if (!sustain && duration) {
-          oscillator.frequency.linearRampToValueAtTime(endFreq, audioCtx.currentTime + duration);
-        } else {
-          const sweepDuration = 2; 
-          oscillator.frequency.linearRampToValueAtTime(endFreq, audioCtx.currentTime + sweepDuration);
-all       }
-      } else {
-        const freq = parseFloat(document.getElementById('freq').value);
-        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      }
+      if (sweep) {
+        const startFreq = parseFloat(document.getElementById('startFreq').value);
+        const endFreq = parseFloat(document.getElementById('endFreq').value);
+        oscillator.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
+        if (!sustain && duration) {
+          oscillator.frequency.linearRampToValueAtTime(endFreq, audioCtx.currentTime + duration);
+        } else {
+          oscillator.frequency.linearRampToValueAtTime(endFreq, audioCtx.currentTime + 5);
+        }
+      } else {
+        const freq = parseFloat(document.getElementById('freq').value);
+        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      }
 
-      oscillator.start();
+      oscillator.start();
+      if (!sustain && duration) {
+        oscillator.stop(audioCtx.currentTime + duration);
+      }
+    }
 
-      if (!sustain && duration) {
-        oscillator.stop(audioCtx.currentTime + duration);
-      }
-    }
+    function stopOscillator() {
+      if (oscillator) {
+        try { oscillator.stop(); } catch (e) {}
+        oscillator.disconnect();
+        oscillator = null;
+      }
+      if (gainNode) {
+        gainNode.disconnect();
+        gainNode = null;
+      }
+    }
 
-    function stopOscillator() {
-      // 只停止振盪器，不關閉 audioCtx
-      if (oscillator) {
-        try {
-          oscillator.stop();
-        } catch (e) {}
-G       oscillator.disconnect();
-        oscillator = null;
-      }
-    }
-  </script>
+    document.getElementById('playBtn').addEventListener('click', startOscillator);
+    document.getElementById('stopBtn').addEventListener('click', stopOscillator);
+  </script>
 </body>
 </html>
