@@ -2,68 +2,73 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>音頻產生器（iOS 完整修正版）</title>
+  <title>音頻產生器（含掃頻功能）</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
       line-height: 1.6;
     }
-    #enableAudio {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 15px 25px;
-      border-radius: 8px;
-      font-size: 18px;
-      cursor: pointer;
+    label {
+      display: block;
+      margin-top: 10px;
     }
-    #mainUI { display: none; }
-    #muteWarning {
-      color: red;
-      font-weight: bold;
-      display: none;
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    input:disabled {
+      background-color: #eee;
     }
   </style>
 </head>
 <body>
-  <h2>音頻產生器（iOS 完整修正版）</h2>
+  <h2>音頻產生器（掃頻、持續播放、自訂波型）</h2>
 
-  <button id="enableAudio">🔈 點擊啟用音訊</button>
-  <p id="muteWarning">🔇 偵測到裝置可能處於靜音模式，請解除 iPhone 靜音開關或調高音量。</p>
-
-  <div id="mainUI">
-    <label><input type="checkbox" id="sweep" onchange="toggleSweep()"> 啟用掃頻</label>
-    <div id="sweep-controls" style="display:none;">
-      <label>起始頻率 (Hz): <input type="number" id="startFreq" value="200"></label>
-      <label>結束頻率 (Hz): <input type="number" id="endFreq" value="2000"></label>
-    </div>
-
-    <label id="freqLabel">頻率 (Hz): <input type="number" id="freq" value="1000"></label>
-    <label>持續時間 (秒): <input type="number" id="duration" value="2" step="0.1"></label>
-    <label>音量 (0 ~ 1): <input type="number" id="volume" value="1" step="0.01" min="0" max="1"></label>
-
-    <label>波型:
-      <select id="waveform">
-        <option value="sine">正弦波 (sine)</option>
-        <option value="square">方波 (square)</option>
-        <option value="triangle">三角波 (triangle)</option>
-        <option value="sawtooth">鋸齒波 (sawtooth)</option>
-      </select>
-    </label>
-
-    <label><input type="checkbox" id="sustain" onchange="toggleDuration()"> 持續播放</label>
-
-    <button id="playBtn">播放</button>
-    <button id="stopBtn">停止</button>
+  <label><input type="checkbox" id="sweep" onchange="toggleSweep()"> 啟用掃頻</label>
+  <div id="sweep-controls" style="display:none;">
+    <label>起始頻率 (Hz): <input type="number" id="startFreq" value="200"></label>
+    <label>結束頻率 (Hz): <input type="number" id="endFreq" value="2000"></label>
   </div>
 
+  <label id="freqLabel">頻率 (Hz): <input type="number" id="freq" value="1000"></label>
+  <label>持續時間 (秒): <input type="number" id="duration" value="2" step="0.1"></label>
+  <label>音量 (0 ~ 1): <input type="number" id="volume" value="1" step="0.01" min="0" max="1"></label>
+
+  <label>波型:
+    <select id="waveform">
+      <option value="sine">正弦波 (sine)</option>
+      <option value="square">方波 (square)</option>
+      <option value="triangle">三角波 (triangle)</option>
+      <option value="sawtooth">鋸齒波 (sawtooth)</option>
+    </select>
+  </label>
+
+  <label><input type="checkbox" id="sustain" onchange="toggleDuration()"> 持續播放</label>
+
+  <button id="playBtn">播放</button>
+  <button id="stopBtn">停止</button>
+
   <script>
-    let audioCtx, oscillator, gainNode;
+    let audioCtx = null;
+    let oscillator = null;
+    let gainNode = null;
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        return audioCtx.resume();
+      }
+      return Promise.resolve();
+    }
 
     function toggleDuration() {
       const sustain = document.getElementById('sustain').checked;
-      document.getElementById('duration').disabled = sustain;
+      const durationInput = document.getElementById('duration');
+      durationInput.disabled = sustain;
     }
 
     function toggleSweep() {
@@ -73,13 +78,8 @@
       document.getElementById('freqLabel').style.color = sweepEnabled ? '#aaa' : '';
     }
 
-    async function ensureAudioContext() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') await audioCtx.resume();
-    }
-
     async function startOscillator() {
-      await ensureAudioContext();
+      await ensureAudioContext(); // ✅ iOS 必須 resume context
 
       const volume = parseFloat(document.getElementById('volume').value);
       const waveform = document.getElementById('waveform').value;
@@ -113,12 +113,14 @@
       }
 
       oscillator.start();
-      if (!sustain && duration) oscillator.stop(audioCtx.currentTime + duration);
+      if (!sustain && duration) {
+        oscillator.stop(audioCtx.currentTime + duration);
+      }
     }
 
     function stopOscillator() {
       if (oscillator) {
-        try { oscillator.stop(); } catch {}
+        try { oscillator.stop(); } catch (e) {}
         oscillator.disconnect();
         oscillator = null;
       }
@@ -128,53 +130,7 @@
       }
     }
 
-    // -----------------------------
-    // 🔍 自動偵測 iPhone 靜音模式
-    // -----------------------------
-    async function detectMuteState() {
-      return new Promise((resolve) => {
-        const audio = document.createElement('audio');
-        // 使用一個極短的 Data URI 音訊（44 bytes PCM silence）
-        audio.src = "data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAAwEACAAACAAACAgAAAB9AAAABAAgAZGF0YQAAAAA=";
-        audio.volume = 1.0;
-        let played = false;
-
-        const timer = setTimeout(() => resolve(true), 1500); // 超時 → 判定靜音
-        audio.onplaying = () => {
-          played = true;
-          clearTimeout(timer);
-          resolve(false); // 非靜音
-        };
-        audio.play().catch(() => {
-          clearTimeout(timer);
-          resolve(true); // 播放被阻止 → 靜音
-        });
-      });
-    }
-
-    async function checkMute() {
-      const isMuted = await detectMuteState();
-      const warning = document.getElementById('muteWarning');
-      if (isMuted) {
-        warning.style.display = 'block';
-      } else {
-        warning.style.display = 'none';
-      }
-    }
-
-    // 使用者第一次觸控啟動音訊
-    document.getElementById('enableAudio').addEventListener('click', async () => {
-      await ensureAudioContext();
-      document.getElementById('enableAudio').style.display = 'none';
-      document.getElementById('mainUI').style.display = 'block';
-      await checkMute(); // 檢查是否靜音
-    });
-
-    document.getElementById('playBtn').addEventListener('click', async () => {
-      await startOscillator();
-      await checkMute(); // 再檢查一次
-    });
-
+    document.getElementById('playBtn').addEventListener('click', startOscillator);
     document.getElementById('stopBtn').addEventListener('click', stopOscillator);
   </script>
 </body>
