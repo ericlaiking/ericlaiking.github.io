@@ -74,3 +74,74 @@
         try {
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           gainNode = audioCtx.createGain();
+          gainNode.connect(audioCtx.destination);
+        } catch (e) {
+          alert('Web Audio API is not supported in this browser');
+          return;
+        }
+      }
+
+      // 檢查並喚醒 (以防萬一)
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      // 停止目前可能在播放的聲音
+      if (oscillator) {
+        try {
+          oscillator.stop();
+        } catch (e) {}
+        oscillator.disconnect();
+      }
+
+      const volume = parseFloat(document.getElementById('volume').value);
+      const waveform = document.getElementById('waveform').value;
+      const sustain = document.getElementById('sustain').checked;
+      const duration = sustain ? null : parseFloat(document.getElementById('duration').value);
+      const sweep = document.getElementById('sweep').checked;
+
+      oscillator = audioCtx.createOscillator();
+      oscillator.type = waveform;
+
+      // 設定音量
+      gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+
+      oscillator.connect(gainNode);
+
+      // 頻率設定
+      if (sweep) {
+        const startFreq = parseFloat(document.getElementById('startFreq').value);
+        const endFreq = parseFloat(document.getElementById('endFreq').value);
+        oscillator.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
+        if (!sustain && duration) {
+          oscillator.frequency.linearRampToValueAtTime(endFreq, audioCtx.currentTime + duration);
+        } else {
+          const sweepDuration = 2; 
+          oscillator.frequency.linearRampToValueAtTime(endFreq, audioCtx.currentTime + sweepDuration);
+all       }
+      } else {
+        const freq = parseFloat(document.getElementById('freq').value);
+        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      }
+
+      oscillator.start();
+
+      if (!sustain && duration) {
+        oscillator.stop(audioCtx.currentTime + duration);
+      }
+    }
+
+    function stopOscillator() {
+      // 只停止振盪器，不關閉 audioCtx
+      if (oscillator) {
+        try {
+          oscillator.stop();
+        } catch (e) {}
+G       oscillator.disconnect();
+        oscillator = null;
+      }
+    }
+  </script>
+</body>
+</html>
