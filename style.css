@@ -890,6 +890,7 @@ a {
     justify-content: center;
     gap: 12px;
     margin-bottom: 48px;
+    flex-wrap: wrap;
 }
 
 .filter-btn {
@@ -1454,7 +1455,7 @@ footer p {
         justify-content: center;
     }
     .hero-visual {
-        order: -1;
+        order: 0;
     }
     .terminal-mockup {
         transform: none;
@@ -1608,5 +1609,70 @@ footer p {
     }
     .project-modal-info {
         padding: 30px;
+    }
+}
+
+/* --- Extra Mobile Optimization Queries --- */
+@media (max-width: 576px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .project-modal-overlay {
+        padding: 12px;
+    }
+    .project-modal-card {
+        max-height: 95vh;
+        border-radius: 16px;
+    }
+    .project-modal-info {
+        padding: 24px 20px;
+    }
+    .project-modal-info h2 {
+        font-size: 1.4rem;
+        margin-top: 4px;
+        margin-bottom: 12px;
+    }
+    .project-modal-close {
+        top: 12px;
+        right: 12px;
+        width: 36px;
+        height: 36px;
+    }
+    .project-modal-img-container {
+        height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 2.2rem;
+    }
+    .hero-subtitle {
+        font-size: 1.25rem;
+    }
+    .hero-description {
+        font-size: 0.92rem;
+    }
+    .hero-ctas {
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+    }
+    .hero-ctas .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .about-image-frame {
+        width: 250px;
+        height: 250px;
+        border-radius: 20px;
+    }
+    .timeline-content {
+        padding: 20px !important;
+    }
+    .filter-btn {
+        padding: 8px 16px;
+        font-size: 0.8rem;
     }
 }
