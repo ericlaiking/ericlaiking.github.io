@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專業級音波產生器 | Waveform Generator</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;850&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- CSS Custom Variables & Design Tokens --- */
+        :root {
+            --bg-primary: #050811;
+            --bg-secondary: #0b1120;
+            --bg-tertiary: #131c33;
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #475569;
+            
+            --accent-primary: #6366f1; /* Indigo */
+            --accent-primary-rgb: 99, 102, 241;
+            --accent-secondary: #06b6d4; /* Cyan */
+            --accent-secondary-rgb: 6, 182, 212;
+            --accent-tertiary: #8b5cf6; /* Violet */
+            --accent-tertiary-rgb: 139, 92, 246;
+            
+            --border-color: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 255, 255, 0.12);
+            
+            --glass-bg: rgba(11, 17, 32, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.05);
+            --glass-shadow: rgba(0, 0, 0, 0.5);
+            
+            --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            --glow-cyan: 0 0 15px rgba(6, 182, 212, 0.4);
+            --glow-indigo: 0 0 15px rgba(99, 102, 241, 0.4);
+            --glow-violet: 0 0 15px rgba(139, 92, 246, 0.4);
+        }
+
+        /* --- Global Reset & Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* --- Ambient Background Glows & Grid --- */
+        .ambient-grid {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.15;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .glow-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(140px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.25;
+        }
+
+        .glow-1 {
+            top: 10%;
+            left: 5%;
+            width: 450px;
+            height: 450px;
+            background-color: var(--accent-primary);
+        }
+
+        .glow-2 {
+            bottom: 10%;
+            right: 5%;
+            width: 500px;
+            height: 500px;
+            background-color: var(--accent-secondary);
+        }
+
+        /* --- Main Layout Container --- */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* --- Header Styles --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 24px;
+        }
+
+        .header-title-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .badge {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+            border: 1px solid var(--accent-secondary);
+            color: var(--accent-secondary);
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            width: fit-content;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 850;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all var(--transition-fast);
+        }
+
+        .back-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-secondary);
+            background: rgba(6, 182, 212, 0.05);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+            transform: translateX(-3px);
+        }
+
+        /* --- Main Content Grid --- */
+        .generator-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1.2fr;
+            gap: 32px;
+        }
+
+        @media (max-width: 1024px) {
+            .generator-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* --- Premium Glassmorphic Cards --- */
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 30px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 20px 40px var(--glass-shadow);
+            transition: border-color var(--transition-normal);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .card-title i {
+            color: var(--accent-secondary);
+        }
+
+        /* --- Main Play/Mute Section --- */
+        .power-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+        }
+
+        .power-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .power-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .power-sub {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .power-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: #ef4444; /* Red default */
+            color: white;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+            transition: all var(--transition-normal);
+            position: relative;
+        }
+
+        .power-btn.active {
+            background: #10b981; /* Green active */
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+            transform: scale(1.05);
+        }
+
+        .power-btn::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transition: all var(--transition-normal);
+        }
+
+        .power-btn.active::after {
+            border-color: #10b981;
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.8; }
+            70% { transform: scale(1.2); opacity: 0; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        /* --- Waveform Selector Cards --- */
+        .wave-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .wave-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            user-select: none;
+        }
+
+        .wave-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .wave-card.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);
+            border-color: var(--accent-secondary);
+            box-shadow: var(--glow-cyan);
+        }
+
+        .wave-icon-wrapper {
+            height: 36px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wave-card svg {
+            width: 44px;
+            height: 24px;
+            fill: none;
+            stroke: var(--text-secondary);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: all var(--transition-normal);
+        }
+
+        .wave-card.active svg {
+            stroke: var(--accent-secondary);
+            filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.6));
+            animation: bounce-wave 2s infinite ease-in-out;
+        }
+
+        .wave-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: color var(--transition-normal);
+        }
+
+        .wave-card.active .wave-label {
+            color: var(--text-primary);
+        }
+
+        @keyframes bounce-wave {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+        }
+
+        /* --- Audio Controls Styles (Sliders & Inputs) --- */
+        .control-group {
+            margin-bottom: 24px;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .control-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-value-display {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--accent-secondary);
+            background: rgba(6, 182, 212, 0.08);
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            text-align: right;
+            min-width: 80px;
+        }
+
+        .slider-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* Customized Glowing Range Sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            outline: none;
+            transition: background var(--transition-fast);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-secondary);
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+            cursor: pointer;
+            transition: transform 0.1s ease, background 0.1s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: var(--text-primary);
+        }
+
+        .freq-actions-container {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            margin-top: 12px;
+            align-items: center;
+        }
+
+        .number-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 4px 12px;
+            max-width: 150px;
+        }
+
+        .number-input-wrapper input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            font-weight: 600;
+            width: 100%;
+            outline: none;
+            text-align: center;
+        }
+
+        .number-input-wrapper span {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .fine-tune-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tune-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Fira Code', monospace;
+            transition: all var(--transition-fast);
+        }
+
+        .tune-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+
+        /* --- Quick Presets Panel --- */
+        .presets-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 24px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .presets-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 10px 4px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all var(--transition-fast);
+        }
+
+        .preset-btn:hover {
+            background: rgba(99, 102, 241, 0.08);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        .preset-desc {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        /* --- Visualizer Screen (Oscilloscope) --- */
+        .visualizer-screen-container {
+            background: #02040a;
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 28px;
+            position: relative;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9);
+            overflow: hidden;
+        }
+
+        .visualizer-screen-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .visualizer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .screen-badge {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: #22c55e;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+        }
+
+        .screen-badge .indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+        }
+
+        .screen-badge.inactive .indicator-dot {
+            background-color: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+        }
+
+        .screen-badge.inactive {
+            color: #ef4444;
+        }
+
+        .visualizer-selector {
+            display: flex;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 2px;
+        }
+
+        .viz-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .viz-toggle-btn.active {
+            background: var(--bg-tertiary);
+            color: var(--accent-secondary);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 200px;
+            background: #02040a;
+            position: relative;
+            z-index: 1;
+            border-radius: 12px;
+        }
+
+        /* --- Advanced Sweep Controller Panel --- */
+        .sweep-form {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .sweep-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sweep-input-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .sweep-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px 14px;
+            transition: border-color var(--transition-fast);
+        }
+
+        .sweep-input-wrapper:focus-within {
+            border-color: var(--accent-primary);
+        }
+
+        .sweep-input-wrapper input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            font-weight: 600;
+            width: 100%;
+            outline: none;
+        }
+
+        .sweep-input-wrapper span {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .sweep-curve-selector {
+            grid-column: span 2;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .curve-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .curve-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .curve-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .curve-card.active {
+            background: rgba(139, 92, 246, 0.08);
+            border-color: var(--accent-tertiary);
+            color: var(--text-primary);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.15);
+        }
+
+        /* --- Sweep Progress Visualizer --- */
+        .sweep-progress-container {
+            margin-bottom: 24px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            display: none; /* Only show when sweeping */
+        }
+
+        .sweep-progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .sweep-progress-header span:last-child {
+            font-family: 'Fira Code', monospace;
+            color: var(--accent-tertiary);
+            font-weight: 700;
+        }
+
+        .progress-track {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-tertiary) 100%);
+            box-shadow: var(--glow-violet);
+            transition: width 0.1s linear;
+        }
+
+        /* --- Sweep Control Buttons --- */
+        .sweep-actions {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+        }
+
+        .sweep-btn {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-tertiary) 100%);
+            border: none;
+            border-radius: 14px;
+            color: white;
+            padding: 14px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(var(--accent-primary-rgb), 0.3);
+            transition: all var(--transition-normal);
+        }
+
+        .sweep-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(var(--accent-primary-rgb), 0.45);
+        }
+
+        .sweep-btn:active {
+            transform: translateY(0);
+        }
+
+        .sweep-btn.sweeping {
+            background: #ef4444;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .reset-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 50px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .reset-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+
+        /* --- Footer Info Elements --- */
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            padding-top: 24px;
+        }
+
+        /* Help Info Tooltip Banner */
+        .info-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            padding: 16px;
+            border-radius: 16px;
+            margin-top: 24px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .info-banner i {
+            color: var(--accent-primary);
+            font-size: 1.1rem;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-grid"></div>
+    <div class="glow-blob glow-1"></div>
+    <div class="glow-blob glow-2"></div>
+
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header>
+            <div class="header-title-container">
+                <span class="badge">Web Audio Lab</span>
+                <h1><span class="gradient-text">專業級音波產生器</span></h1>
+            </div>
+            <a href="index.html" class="back-btn">
+                <i class="fa-solid fa-arrow-left"></i> 回到首頁
+            </a>
+        </header>
+
+        <!-- Main Layout Grid -->
+        <div class="generator-grid">
+            
+            <!-- Left Column: Controls Card -->
+            <div class="glass-card">
+                <div class="card-title">
+                    <i class="fa-solid fa-sliders"></i> 音量與頻率控制
+                </div>
+
+                <!-- Main Power Switch -->
+                <div class="power-wrapper">
+                    <div class="power-info">
+                        <span class="power-label">主音訊開關</span>
+                        <span class="power-sub" id="power-sub-text">點擊右側按鈕開啟音訊輸出</span>
+                    </div>
+                    <button id="btn-power" class="power-btn" aria-label="Toggle Power">
+                        <i class="fa-solid fa-power-off"></i>
+                    </button>
+                </div>
+
+                <!-- Waveform Selectors -->
+                <div class="control-group">
+                    <span class="control-label"><i class="fa-solid fa-wave-square"></i> 選擇波形</span>
+                    <div class="wave-selector" style="margin-top: 10px;">
+                        <!-- Sine -->
+                        <div class="wave-card active" data-wave="sine">
+                            <div class="wave-icon-wrapper">
+                                <svg viewBox="0 0 44 24">
+                                    <path d="M2 12 C 10 2, 12 2, 22 12 S 34 22, 42 12" />
+                                </svg>
+                            </div>
+                            <span class="wave-label">正弦波</span>
+                        </div>
+                        <!-- Triangle -->
+                        <div class="wave-card" data-wave="triangle">
+                            <div class="wave-icon-wrapper">
+                                <svg viewBox="0 0 44 24">
+                                    <path d="M2 12 L 12 2 L 32 22 L 42 12" />
+                                </svg>
+                            </div>
+                            <span class="wave-label">三角波</span>
+                        </div>
+                        <!-- Sawtooth -->
+                        <div class="wave-card" data-wave="sawtooth">
+                            <div class="wave-icon-wrapper">
+                                <svg viewBox="0 0 44 24">
+                                    <path d="M2 12 L 22 2 L 22 22 L 42 12" />
+                                </svg>
+                            </div>
+                            <span class="wave-label">鋸齒波</span>
+                        </div>
+                        <!-- Square -->
+                        <div class="wave-card" data-wave="square">
+                            <div class="wave-icon-wrapper">
+                                <svg viewBox="0 0 44 24">
+                                    <path d="M2 12 L 12 12 L 12 2 L 32 2 L 32 22 L 42 22" />
+                                </svg>
+                            </div>
+                            <span class="wave-label">方波</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Frequency Controller -->
+                <div class="control-group">
+                    <div class="control-header">
+                        <span class="control-label"><i class="fa-solid fa-wave-square"></i> 頻率 (Frequency)</span>
+                        <span class="control-value-display" id="freq-val">440.0 Hz</span>
+                    </div>
+                    <div class="slider-wrapper">
+                        <input type="range" id="slider-freq" min="20" max="20000" step="1" value="440">
+                    </div>
+                    <div class="freq-actions-container">
+                        <div class="number-input-wrapper">
+                            <input type="number" id="input-freq" min="20" max="20000" value="440" step="0.1">
+                            <span>Hz</span>
+                        </div>
+                        <div class="fine-tune-buttons">
+                            <button class="tune-btn" data-tune="-10">-10Hz</button>
+                            <button class="tune-btn" data-tune="-1">-1Hz</button>
+                            <button class="tune-btn" data-tune="1">+1Hz</button>
+                            <button class="tune-btn" data-tune="10">+10Hz</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Volume / Gain Controller -->
+                <div class="control-group">
+                    <div class="control-header">
+                        <span class="control-label"><i class="fa-solid fa-volume-high"></i> 音量 (Volume)</span>
+                        <span class="control-value-display" id="volume-val">20%</span>
+                    </div>
+                    <div class="slider-wrapper">
+                        <input type="range" id="slider-volume" min="0" max="100" step="1" value="20">
+                    </div>
+                </div>
+
+                <!-- Common Frequencies Presets -->
+                <span class="presets-title"><i class="fa-solid fa-music"></i> 常用頻率預設鍵</span>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-freq="27.5">
+                        A0
+                        <span class="preset-desc">27.5Hz Sub</span>
+                    </button>
+                    <button class="preset-btn" data-freq="261.63">
+                        C4 (中音C)
+                        <span class="preset-desc">261.6Hz</span>
+                    </button>
+                    <button class="preset-btn" data-freq="440">
+                        A4 (標準)
+                        <span class="preset-desc">440Hz</span>
+                    </button>
+                    <button class="preset-btn" data-freq="1000">
+                        1 kHz
+                        <span class="preset-desc">測試音</span>
+                    </button>
+                    <button class="preset-btn" data-freq="2000">
+                        2 kHz
+                        <span class="preset-desc">清晰頻率</span>
+                    </button>
+                    <button class="preset-btn" data-freq="5000">
+                        5 kHz
+                        <span class="preset-desc">高頻</span>
+                    </button>
+                    <button class="preset-btn" data-freq="10000">
+                        10 kHz
+                        <span class="preset-desc">超高頻</span>
+                    </button>
+                    <button class="preset-btn" data-freq="15000">
+                        15 kHz
+                        <span class="preset-desc">聽力測試</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Visualizer Screen & Advanced Sweep Card -->
+            <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div class="card-title">
+                        <i class="fa-solid fa-chart-line"></i> 訊號視覺化監控
+                    </div>
+
+                    <!-- Visualizer Canvas Container -->
+                    <div class="visualizer-screen-container">
+                        <div class="visualizer-header">
+                            <div class="screen-badge inactive" id="screen-status">
+                                <span class="indicator-dot"></span>
+                                <span id="screen-status-text">OFFLINE</span>
+                            </div>
+                            <div class="visualizer-selector">
+                                <button class="viz-toggle-btn active" data-mode="oscilloscope">波形圖</button>
+                                <button class="viz-toggle-btn" data-mode="spectrum">頻譜圖</button>
+                            </div>
+                        </div>
+                        <canvas id="canvas-visualizer"></canvas>
+                    </div>
+
+                    <div class="card-title" style="margin-top: 10px;">
+                        <i class="fa-solid fa-forward-fast"></i> 進階掃頻功能 (Frequency Sweep)
+                    </div>
+
+                    <!-- Sweep Configuration Forms -->
+                    <div class="sweep-form">
+                        <div class="sweep-input-group">
+                            <label for="sweep-start">起始頻率</label>
+                            <div class="sweep-input-wrapper">
+                                <input type="number" id="sweep-start" min="20" max="20000" value="200">
+                                <span>Hz</span>
+                            </div>
+                        </div>
+                        <div class="sweep-input-group">
+                            <label for="sweep-end">結束頻率</label>
+                            <div class="sweep-input-wrapper">
+                                <input type="number" id="sweep-end" min="20" max="20000" value="2000">
+                                <span>Hz</span>
+                            </div>
+                        </div>
+                        <div class="sweep-input-group" style="grid-column: span 2;">
+                            <label for="sweep-duration">掃頻時間</label>
+                            <div class="sweep-input-wrapper">
+                                <input type="number" id="sweep-duration" min="0.5" max="60" value="5" step="0.5">
+                                <span>秒 (Seconds)</span>
+                            </div>
+                        </div>
+                        <div class="sweep-curve-selector">
+                            <label>變化曲線</label>
+                            <div class="curve-cards">
+                                <div class="curve-card active" data-curve="linear">
+                                    <i class="fa-solid fa-chart-line"></i> 線性 (Linear)
+                                </div>
+                                <div class="curve-card" data-curve="exponential">
+                                    <i class="fa-solid fa-chart-area"></i> 對數/指數 (Exponential)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sweep Progress (Visible while active) -->
+                    <div class="sweep-progress-container" id="sweep-progress-panel">
+                        <div class="sweep-progress-header">
+                            <span>掃頻進行中...</span>
+                            <span id="sweep-current-freq">0.0 Hz</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-bar" id="sweep-progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sweep Action Buttons -->
+                <div class="sweep-actions" style="margin-top: 20px;">
+                    <button class="sweep-btn" id="btn-sweep">
+                        <i class="fa-solid fa-play"></i> 開始掃頻 (Start Sweep)
+                    </button>
+                    <button class="reset-btn" id="btn-sweep-reset" title="重設掃頻參數">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Safety Notice Info Banner -->
+        <div class="info-banner">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>
+                <strong>使用安全叮嚀：</strong>
+                本工具使用瀏覽器 Web Audio API 實時合成音波。在點擊開啟「主音訊開關」或使用高頻 (例如 10 kHz 以上) 進行測試時，請確保您的耳機或喇叭音量已先調低，以免過高分貝造成您的聽力受損或設備負載過高。
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2026 Eric Lai Portfolio. Designed with High-Fidelity Audio Controls.</p>
+        </footer>
+
+    </div>
+
+    <!-- Interactive Scripting -->
+    <script>
+        // --- State Management Variables ---
+        let audioCtx = null;
+        let oscillator = null;
+        let gainNode = null;
+        let analyser = null;
+        
+        let isPlaying = false;
+        let currentWaveform = 'sine';
+        let currentFrequency = 440; // Hz
+        let currentVolume = 20; // 0 - 100
+
+        // Sweep variables
+        let isSweeping = false;
+        let sweepStartTime = 0;
+        let sweepDuration = 5; // seconds
+        let sweepStartFreq = 200;
+        let sweepEndFreq = 2000;
+        let sweepCurve = 'linear'; // 'linear' or 'exponential'
+        let sweepInterval = null;
+        let sweepProgressTimer = null;
+
+        // UI View Variables
+        let visualizerMode = 'oscilloscope'; // 'oscilloscope' or 'spectrum'
+
+        // --- DOM Elements Query ---
+        const btnPower = document.getElementById('btn-power');
+        const powerSubText = document.getElementById('power-sub-text');
+        const waveCards = document.querySelectorAll('.wave-card');
+        
+        const sliderFreq = document.getElementById('slider-freq');
+        const inputFreq = document.getElementById('input-freq');
+        const freqValDisplay = document.getElementById('freq-val');
+        const tuneButtons = document.querySelectorAll('.tune-btn');
+        
+        const sliderVolume = document.getElementById('slider-volume');
+        const volumeValDisplay = document.getElementById('volume-val');
+        
+        const presetButtons = document.querySelectorAll('.preset-btn');
+        
+        const canvas = document.getElementById('canvas-visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        const screenStatus = document.getElementById('screen-status');
+        const screenStatusText = document.getElementById('screen-status-text');
+        const vizToggleButtons = document.querySelectorAll('.viz-toggle-btn');
+        
+        const inputSweepStart = document.getElementById('sweep-start');
+        const inputSweepEnd = document.getElementById('sweep-end');
+        const inputSweepDuration = document.getElementById('sweep-duration');
+        const curveCards = document.querySelectorAll('.curve-card');
+        const btnSweep = document.getElementById('btn-sweep');
+        const btnSweepReset = document.getElementById('btn-sweep-reset');
+        
+        const sweepProgressPanel = document.getElementById('sweep-progress-panel');
+        const sweepCurrentFreqDisplay = document.getElementById('sweep-current-freq');
+        const sweepProgressBar = document.getElementById('sweep-progress-bar');
+
+        // --- Web Audio Initialization & Control ---
+        function initAudio() {
+            if (audioCtx) return;
+            
+            // Standard AudioContext initialization (handling iOS/Safari compatibility)
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContextClass();
+            
+            // Create audio nodes
+            gainNode = audioCtx.createGain();
+            analyser = audioCtx.createAnalyser();
+            
+            // Configure Analyser
+            analyser.fftSize = 2048;
+            
+            // Link Nodes: Gain -> Analyser -> Destination
+            gainNode.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            
+            // Set initial volume
+            setAudioVolume(currentVolume);
+        }
+
+        function startTone() {
+            if (isPlaying) return;
+            
+            initAudio();
+            
+            // If context is suspended (browser autoplay policy), resume it
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            // Create a brand new Oscillator node (Web Audio Oscillators are disposable nodes)
+            oscillator = audioCtx.createOscillator();
+            oscillator.type = currentWaveform;
+            
+            // Set initial frequency securely with linear ramp to avoid popping
+            oscillator.frequency.setValueAtTime(currentFrequency, audioCtx.currentTime);
+            
+            // Link Oscillator to Gain Node
+            oscillator.connect(gainNode);
+            
+            // Smoothly ramp up the gain from 0 to target volume when initiating
+            const targetGain = currentVolume / 100;
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(targetGain, audioCtx.currentTime + 0.03);
+            
+            oscillator.start();
+            isPlaying = true;
+            
+            // Update UI statuses
+            updatePowerUI(true);
+            drawVisualizer();
+        }
+
+        function stopTone() {
+            if (!isPlaying || !oscillator) return;
+            
+            // Smoothly ramp down gain to 0 in 30ms to prevent popping clicks
+            gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.03);
+            
+            // Stop and destroy the oscillator after the ramp finishes
+            const tempOsc = oscillator;
+            setTimeout(() => {
+                try {
+                    tempOsc.stop();
+                    tempOsc.disconnect();
+                } catch(e) {}
+            }, 30);
+            
+            oscillator = null;
+            isPlaying = false;
+            
+            updatePowerUI(false);
+        }
+
+        function togglePower() {
+            // If currently sweeping, cancel the sweep first
+            if (isSweeping) {
+                stopSweep();
+            }
+            
+            if (isPlaying) {
+                stopTone();
+            } else {
+                startTone();
+            }
+        }
+
+        function updatePowerUI(active) {
+            if (active) {
+                btnPower.classList.add('active');
+                powerSubText.textContent = "音訊輸出中 | 正以實時波形傳輸";
+                screenStatus.classList.remove('inactive');
+                screenStatusText.textContent = "LIVE DATA";
+            } else {
+                btnPower.classList.remove('active');
+                powerSubText.textContent = "音訊已靜音 | 點擊右側按鈕開啟";
+                screenStatus.classList.add('inactive');
+                screenStatusText.textContent = "OFFLINE";
+            }
+        }
+
+        // --- Value Update Handlers ---
+
+        function setWaveform(type) {
+            currentWaveform = type;
+            if (oscillator) {
+                oscillator.type = type;
+            }
+            
+            // Update UI Selector Cards
+            waveCards.forEach(card => {
+                if (card.dataset.wave === type) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+        }
+
+        // Exponential mapping for smooth frequency slider transitions
+        // Translates percentage (0-100) to exponential frequency (20Hz - 20,000Hz)
+        function frequencySliderToVal(pos) {
+            const minFreq = 20;
+            const maxFreq = 20000;
+            // Calculate exponentially
+            return minFreq * Math.pow(maxFreq / minFreq, pos / 100);
+        }
+
+        function frequencyValToSlider(val) {
+            const minFreq = 20;
+            const maxFreq = 20000;
+            return (Math.log(val / minFreq) / Math.log(maxFreq / minFreq)) * 100;
+        }
+
+        function setFrequency(hz, updateSlider = true, updateInput = true) {
+            // Keep frequency securely bounded between 20 and 20000 Hz
+            hz = Math.max(20, Math.min(20000, parseFloat(hz)));
+            currentFrequency = hz;
+            
+            // If oscillator is running, update its parameter smoothly
+            if (oscillator && !isSweeping) {
+                oscillator.frequency.setTargetAtTime(hz, audioCtx.currentTime, 0.015);
+            }
+            
+            // Update UI indicators
+            freqValDisplay.textContent = hz.toFixed(1) + " Hz";
+            
+            if (updateSlider) {
+                sliderFreq.value = frequencyValToSlider(hz);
+            }
+            if (updateInput) {
+                inputFreq.value = hz.toFixed(1);
+            }
+        }
+
+        function setAudioVolume(pct) {
+            currentVolume = parseInt(pct);
+            const displayPct = currentVolume + "%";
+            volumeValDisplay.textContent = displayPct;
+            
+            if (gainNode && isPlaying && !isSweeping) {
+                const targetGain = currentVolume / 100;
+                // Smooth target ramp to prevent volume changes from clicking
+                gainNode.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.015);
+            }
+        }
+
+        // --- Live Oscilloscope / Spectrum Visualizer Engine ---
+        function drawVisualizer() {
+            if (!isPlaying || !analyser) {
+                // Draw flat line when offline
+                drawOfflineVisualizer();
+                return;
+            }
+            
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Request next frame recursively
+            requestAnimationFrame(drawVisualizer);
+            
+            // Handle Oscilloscope (Time Domain)
+            if (visualizerMode === 'oscilloscope') {
+                analyser.getByteTimeDomainData(dataArray);
+                
+                canvasCtx.fillStyle = '#02040a';
+                canvasCtx.fillRect(0, 0, width, height);
+                
+                // Draw neon grids in background
+                drawScreenGrid();
+                
+                // Draw Waveform Line
+                canvasCtx.lineWidth = 3;
+                
+                // Glowing cyan gradient for oscilloscope lines
+                const strokeGlow = canvasCtx.createLinearGradient(0, 0, width, 0);
+                strokeGlow.addColorStop(0, '#6366f1');
+                strokeGlow.addColorStop(0.5, '#06b6d4');
+                strokeGlow.addColorStop(1, '#8b5cf6');
+                
+                canvasCtx.strokeStyle = strokeGlow;
+                canvasCtx.shadowBlur = 8;
+                canvasCtx.shadowColor = '#06b6d4';
+                
+                canvasCtx.beginPath();
+                
+                const sliceWidth = width / bufferLength;
+                let x = 0;
+                
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0; // Normalized
+                    const y = v * (height / 2);
+                    
+                    if (i === 0) {
+                        canvasCtx.moveTo(x, y);
+                    } else {
+                        canvasCtx.lineTo(x, y);
+                    }
+                    
+                    x += sliceWidth;
+                }
+                
+                canvasCtx.lineTo(width, height / 2);
+                canvasCtx.stroke();
+                canvasCtx.shadowBlur = 0; // Reset shadow for efficiency
+                
+            } else {
+                // Handle Spectrum Analyser (Frequency Domain)
+                analyser.getByteFrequencyData(dataArray);
+                
+                canvasCtx.fillStyle = '#02040a';
+                canvasCtx.fillRect(0, 0, width, height);
+                
+                // Draw grids
+                drawScreenGrid();
+                
+                const barWidth = (width / bufferLength) * 2.5;
+                let barHeight;
+                let x = 0;
+                
+                for (let i = 0; i < bufferLength; i++) {
+                    barHeight = dataArray[i] / 1.5;
+                    
+                    if (barHeight > 0) {
+                        const y = height - barHeight;
+                        
+                        // Beautiful purple-to-cyan spectrum bars
+                        canvasCtx.fillStyle = `hsla(${200 + (i * 0.5)}, 90%, 55%, 0.85)`;
+                        canvasCtx.fillRect(x, y, barWidth - 1, barHeight);
+                    }
+                    
+                    x += barWidth;
+                    if (x > width) break;
+                }
+            }
+        }
+
+        function drawScreenGrid() {
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            canvasCtx.lineWidth = 1;
+            
+            // Draw horizontal grid lines
+            for (let y = 20; y < height; y += 20) {
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(0, y);
+                canvasCtx.lineTo(width, y);
+                canvasCtx.stroke();
+            }
+            
+            // Draw vertical grid lines
+            for (let x = 30; x < width; x += 30) {
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(x, 0);
+                canvasCtx.lineTo(x, height);
+                canvasCtx.stroke();
+            }
+            
+            // Center horizontal line
+            canvasCtx.strokeStyle = 'rgba(6, 182, 212, 0.08)';
+            canvasCtx.lineWidth = 1.5;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, height / 2);
+            canvasCtx.lineTo(width, height / 2);
+            canvasCtx.stroke();
+        }
+
+        function drawOfflineVisualizer() {
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            canvasCtx.fillStyle = '#02040a';
+            canvasCtx.fillRect(0, 0, width, height);
+            
+            drawScreenGrid();
+            
+            // Flat green/cyan line
+            canvasCtx.lineWidth = 2;
+            canvasCtx.strokeStyle = 'rgba(239, 68, 68, 0.3)'; // Red offline line
+            canvasCtx.shadowBlur = 4;
+            canvasCtx.shadowColor = '#ef4444';
+            
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, height / 2);
+            canvasCtx.lineTo(width, height / 2);
+            canvasCtx.stroke();
+            canvasCtx.shadowBlur = 0;
+        }
+
+        // Make canvas sharp on high DPI screens
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = 200; // Fixed canvas height
+            
+            // If offline, refresh placeholder line
+            if (!isPlaying) {
+                drawOfflineVisualizer();
+            }
+        }
+
+        // --- Advanced Sweep System ---
+
+        function startSweep() {
+            if (isSweeping) return;
+            
+            // Retrieve latest sweep forms parameters
+            sweepStartFreq = Math.max(20, Math.min(20000, parseFloat(inputSweepStart.value)));
+            sweepEndFreq = Math.max(20, Math.min(20000, parseFloat(inputSweepEnd.value)));
+            sweepDuration = Math.max(0.5, Math.min(60, parseFloat(inputSweepDuration.value)));
+            
+            initAudio();
+            
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            // Cancel current tone if running
+            if (isPlaying && oscillator) {
+                try {
+                    oscillator.stop();
+                    oscillator.disconnect();
+                } catch(e) {}
+                oscillator = null;
+            }
+            
+            // Set up Sweep Tone oscillator
+            oscillator = audioCtx.createOscillator();
+            oscillator.type = currentWaveform;
+            oscillator.connect(gainNode);
+            
+            const now = audioCtx.currentTime;
+            
+            // Set initial volume smoothly
+            const targetGain = currentVolume / 100;
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(targetGain, now + 0.05);
+            
+            // Configure sweep curve frequencies in AudioParam thread
+            oscillator.frequency.setValueAtTime(sweepStartFreq, now);
+            
+            if (sweepCurve === 'exponential') {
+                // Exponential ramp requires non-zero value and matching signs
+                oscillator.frequency.exponentialRampToValueAtTime(sweepEndFreq, now + sweepDuration);
+            } else {
+                oscillator.frequency.linearRampToValueAtTime(sweepEndFreq, now + sweepDuration);
+            }
+            
+            oscillator.start(now);
+            isPlaying = true;
+            isSweeping = true;
+            sweepStartTime = Date.now();
+            
+            // Display Progress and Controls
+            sweepProgressPanel.style.display = 'block';
+            btnSweep.innerHTML = '<i class="fa-solid fa-square-full" style="font-size: 0.8rem;"></i> 停止掃頻 (Stop Sweep)';
+            btnSweep.classList.add('sweeping');
+            updatePowerUI(true);
+            
+            // Trigger visuals
+            drawVisualizer();
+            
+            // Start UI visual polling loop (for accurate frequency status text and slider synchronization)
+            updateSweepVisuals();
+        }
+
+        function stopSweep() {
+            if (!isSweeping) return;
+            
+            // Clear animations
+            cancelAnimationFrame(sweepProgressTimer);
+            
+            // Stop sound
+            if (oscillator) {
+                try {
+                    oscillator.stop();
+                    oscillator.disconnect();
+                } catch(e) {}
+                oscillator = null;
+            }
+            
+            isPlaying = false;
+            isSweeping = false;
+            
+            // Restore Controls UI
+            sweepProgressPanel.style.display = 'none';
+            btnSweep.innerHTML = '<i class="fa-solid fa-play"></i> 開始掃頻 (Start Sweep)';
+            btnSweep.classList.remove('sweeping');
+            
+            // Set frequency to the landing/end frequency of the sweep
+            setFrequency(sweepEndFreq);
+            updatePowerUI(false);
+        }
+
+        function updateSweepVisuals() {
+            if (!isSweeping) return;
+            
+            const elapsed = (Date.now() - sweepStartTime) / 1000;
+            const pct = Math.min(100, (elapsed / sweepDuration) * 100);
+            
+            // Update Progress bar width
+            sweepProgressBar.style.width = pct + "%";
+            
+            // Calculate current frequency on-the-fly for screen indicators
+            let currentSweptFreq = sweepStartFreq;
+            if (sweepCurve === 'exponential') {
+                const ratio = elapsed / sweepDuration;
+                currentSweptFreq = sweepStartFreq * Math.pow((sweepEndFreq / sweepStartFreq), ratio);
+            } else {
+                currentSweptFreq = sweepStartFreq + (sweepEndFreq - sweepStartFreq) * (elapsed / sweepDuration);
+            }
+            
+            // Clamp and display current pitch
+            currentSweptFreq = Math.max(Math.min(currentSweptFreq, 20000), 20);
+            sweepCurrentFreqDisplay.textContent = currentSweptFreq.toFixed(1) + " Hz";
+            setFrequency(currentSweptFreq, true, true);
+            
+            if (elapsed >= sweepDuration) {
+                // Sweep completed successfully
+                setTimeout(() => {
+                    stopSweep();
+                }, 100);
+            } else {
+                sweepProgressTimer = requestAnimationFrame(updateSweepVisuals);
+            }
+        }
+
+        function resetSweepConfig() {
+            inputSweepStart.value = 200;
+            inputSweepEnd.value = 2000;
+            inputSweepDuration.value = 5;
+            
+            // Reset Curve to Linear
+            setSweepCurve('linear');
+        }
+
+        function setSweepCurve(curve) {
+            sweepCurve = curve;
+            curveCards.forEach(card => {
+                if (card.dataset.curve === curve) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+        }
+
+        // --- Event Listeners Binding ---
+
+        // Power Switch Click
+        btnPower.addEventListener('click', togglePower);
+
+        // Waveform Selector Cards Binding
+        waveCards.forEach(card => {
+            card.addEventListener('click', () => {
+                setWaveform(card.dataset.wave);
+            });
+        });
+
+        // Frequency Slider Input Binding (exponential)
+        sliderFreq.addEventListener('input', (e) => {
+            const freq = frequencySliderToVal(e.target.value);
+            setFrequency(freq, false, true);
+        });
+
+        // Frequency Number Box Input Binding
+        inputFreq.addEventListener('input', (e) => {
+            let val = parseFloat(e.target.value);
+            if (!isNaN(val)) {
+                setFrequency(val, true, false);
+            }
+        });
+
+        // Fine Tune Buttons
+        tuneButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const step = parseFloat(btn.dataset.tune);
+                setFrequency(currentFrequency + step, true, true);
+            });
+        });
+
+        // Preset Quick Frequencies Buttons
+        presetButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const hz = parseFloat(btn.dataset.freq);
+                setFrequency(hz, true, true);
+            });
+        });
+
+        // Volume Slider Binding
+        sliderVolume.addEventListener('input', (e) => {
+            setAudioVolume(e.target.value);
+        });
+
+        // Visualizer Mode Toggles
+        vizToggleButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                vizToggleButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                visualizerMode = btn.dataset.mode;
+                
+                if (!isPlaying) {
+                    drawOfflineVisualizer();
+                }
+            });
+        });
+
+        // Sweep Control curves
+        curveCards.forEach(card => {
+            card.addEventListener('click', () => {
+                setSweepCurve(card.dataset.curve);
+            });
+        });
+
+        // Sweep Actions
+        btnSweep.addEventListener('click', () => {
+            if (isSweeping) {
+                stopSweep();
+            } else {
+                startSweep();
+            }
+        });
+
+        btnSweepReset.addEventListener('click', resetSweepConfig);
+
+        // Window resize adjustments
+        window.addEventListener('resize', resizeCanvas);
+
+        // Safe Spacebar shortcut (Toggles Tone On/Mute when in page)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                // Prevent scrolling page when spacebar is pressed
+                e.preventDefault();
+                
+                // If keyboard cursor isn't in numeric inputs, toggle audio power
+                const activeEl = document.activeElement;
+                if (activeEl.tagName !== 'INPUT') {
+                    togglePower();
+                }
+            }
+        });
+
+        // --- App Booting Initialization ---
+        resizeCanvas();
+        drawOfflineVisualizer(); // Initial visual display in offline mode
+    </script>
+</body>
+</html>
