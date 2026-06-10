@@ -952,7 +952,7 @@
                         <span class="control-value-display" id="freq-val">440.0 Hz</span>
                     </div>
                     <div class="slider-wrapper">
-                        <input type="range" id="slider-freq" min="20" max="20000" step="1" value="440">
+                        <input type="range" id="slider-freq" min="0" max="1000" step="1" value="447">
                     </div>
                     <div class="freq-actions-container">
                         <div class="number-input-wrapper">
@@ -1302,18 +1302,18 @@
         }
 
         // Exponential mapping for smooth frequency slider transitions
-        // Translates percentage (0-100) to exponential frequency (20Hz - 20,000Hz)
+        // Translates position (0-1000) to exponential frequency (20Hz - 20,000Hz)
         function frequencySliderToVal(pos) {
             const minFreq = 20;
             const maxFreq = 20000;
             // Calculate exponentially
-            return minFreq * Math.pow(maxFreq / minFreq, pos / 100);
+            return minFreq * Math.pow(maxFreq / minFreq, pos / 1000);
         }
 
         function frequencyValToSlider(val) {
             const minFreq = 20;
             const maxFreq = 20000;
-            return (Math.log(val / minFreq) / Math.log(maxFreq / minFreq)) * 100;
+            return (Math.log(val / minFreq) / Math.log(maxFreq / minFreq)) * 1000;
         }
 
         function setFrequency(hz, updateSlider = true, updateInput = true) {
@@ -1751,6 +1751,7 @@
 
         // --- App Booting Initialization ---
         resizeCanvas();
+        setFrequency(currentFrequency); // Sync slider and input with initial value
         drawOfflineVisualizer(); // Initial visual display in offline mode
     </script>
 </body>
