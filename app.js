@@ -393,6 +393,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 "Highlights standard register mask patterns (AND/OR operations) for field testing.",
                 "Speeds up manual register configuration verification under testing benches."
             ]
+        },
+        "8": {
+            title: "Comm Module EVB AI Control Tool",
+            tag: "AI Agent / GUI / AT Commands",
+            img: "assets/project2.png",
+            tech: ["AI Agent", "AT Commands", "Quectel & Yuge EVB", "HiSilicon TBOX", "GUI Framework"],
+            desc: "An intelligent GUI tool built to interface with Communication Module EVBs (Quectel, Yuge, Huawei/HiSilicon TBOX SoC). It leverages AI Agents to parse and send complex AT Commands, significantly simplifying the initialization and diagnostic processes for advanced automotive communication modules.",
+            specs: [
+                "Developed an intuitive GUI to abstract the complexity of raw AT command sequences.",
+                "Integrated AI Agents to assist in generating and interpreting AT commands for Quectel and Yuge EVBs.",
+                "Supported advanced TBOX SoC environments including Huawei/HiSilicon architectures.",
+                "Streamlined the testing pipeline for telematics and automotive communication gateways."
+            ]
+        },
+        "9": {
+            title: "AI Schematic Review Automation Suite",
+            tag: "AI LLM / CLI / Workflow Automation",
+            img: "assets/project4.png",
+            tech: ["Claude Code CLI", "Azure 2FA", "Circuit Review", "LLM Orchestration", "GUI Framework"],
+            desc: "A complete \"one-click\" GUI workflow that automates customer circuit PDF reviews by cross-referencing IC whitepapers. Backed by a CLI connecting to corporate Claude Code infrastructure, it features auto-environment detection (Intranet/Version/Login) and dynamic model switching. Integrated Microsoft 2FA via Azure Management Portal ensures secure access control for authorized personnel.",
+            specs: [
+                "Led internal training sessions on utilizing AI for reviewing schematic designs and generating IC whitepapers.",
+                "Architected a 'no-brainer' GUI wrapper around the company's internal Claude Code CLI tool.",
+                "Implemented automatic environment checks for intranet connectivity, CLI versioning, and user login state.",
+                "Integrated Microsoft 2FA via Azure Management Portal to restrict access to authorized personnel.",
+                "Enabled one-click schematic PDF reviews with dynamic model selection and output of highly actionable PDF reports."
+            ]
         }
     };
 
